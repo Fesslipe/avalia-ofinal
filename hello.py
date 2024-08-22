@@ -18,7 +18,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Configurações do Mailgun
 MAILGUN_DOMAIN = 'sandbox93a2452791294e1d965d2bd71de9e3d9.mailgun.org'
-MAILGUN_API_KEY = '0acea93460af69961fe63c535fe5ebce-911539ec-85adaa9f'
+MAILGUN_API_KEY =
 FROM_EMAIL = 'sandbox93a2452791294e1d965d2bd71de9e3d9.mailgun.org'
 TO_EMAILS = ['flaskaulasweb@zohomail.com','queiroz.lopes@aluno.ifsp.edu.br']
 
