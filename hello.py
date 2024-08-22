@@ -30,7 +30,7 @@ migrate = Migrate(app, db)
 def send_email(subject, body):
   	return requests.post(
   		"https://api.mailgun.net/v3/sandbox2147206ffd4640a0b6c988122c171af5.mailgun.org/messages",
-  		auth=("api", "0acea93460af69961fe63c535fe5ebce-911539ec-85adaa9f"),
+  		auth=("api", ""),
   		data={"from": "Excited User <mailgun@sandbox2147206ffd4640a0b6c988122c171af5.mailgun.org>",
   			"to": TO_EMAILS,
   			"subject": subject,
