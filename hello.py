@@ -17,24 +17,25 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'da
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Configurações do Mailgun
-MAILGUN_DOMAIN = 'sandbox93a2452791294e1d965d2bd71de9e3d9.mailgun.org'
-MAILGUN_API_KEY =
-FROM_EMAIL = 'sandbox93a2452791294e1d965d2bd71de9e3d9.mailgun.org'
-TO_EMAILS = ['flaskaulasweb@zohomail.com','queiroz.lopes@aluno.ifsp.edu.br']
+MAILGUN_DOMAIN = 'x'
+MAILGUN_API_KEY = 'x'
+FROM_EMAIL = 'x'
+TO_EMAILS = ['x','x','x']
 
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-def send_email(subject, body):
-  	return requests.post(
-  		"https://api.mailgun.net/v3/sandbox2147206ffd4640a0b6c988122c171af5.mailgun.org/messages",
-  		auth=("api", ""),
-  		data={"from": "Excited User <mailgun@sandbox2147206ffd4640a0b6c988122c171af5.mailgun.org>",
-  			"to": TO_EMAILS,
-  			"subject": subject,
-  			"text": body})
+def send_simple_message(subject, body):
+    return requests.post(
+        f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
+        auth=("api", MAILGUN_API_KEY),
+        data={"from": FROM_EMAIL,
+              "to": TO_EMAILS,
+              "subject": subject,
+              "text": body}
+    )
 
 class Role(db.Model):
     __tablename__ = 'roles'
@@ -92,9 +93,9 @@ def index():
             session['known'] = False
 
             # Enviar e-mail após o cadastro de um novo usuário
-            response = send_email(
+            response = send_simple_message(
                 subject="Novo usuário cadastrado",
-                body=f"Usuário {user.username} foi cadastrado com sucesso com a função {role.name}."
+                body=f"Usuário {user.username} foi cadastrado com sucesso com a função {role.name} na Aplicação do Felipe Lopes."
             )
 
             # Adicionar um feedback sobre o envio do e-mail
@@ -126,4 +127,4 @@ def index():
                            total_users=total_users, users_by_role=users_by_role)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5002)
