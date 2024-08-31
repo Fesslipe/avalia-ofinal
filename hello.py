@@ -1,13 +1,12 @@
 import os
-import requests
-from flask import Flask, render_template, session, redirect, url_for
+from flask import Flask, render_template, redirect, url_for, flash
 from flask_bootstrap import Bootstrap
-from flask_moment import Moment
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_moment import Moment
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -16,115 +15,87 @@ app.config['SECRET_KEY'] = 'hard to guess string'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Configurações do Mailgun
-MAILGUN_DOMAIN = 'x'
-MAILGUN_API_KEY = 'x'
-FROM_EMAIL = 'x'
-TO_EMAILS = ['x','x','x']
-
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-def send_simple_message(subject, body):
-    return requests.post(
-        f"https://api.mailgun.net/v3/{MAILGUN_DOMAIN}/messages",
-        auth=("api", MAILGUN_API_KEY),
-        data={"from": FROM_EMAIL,
-              "to": TO_EMAILS,
-              "subject": subject,
-              "text": body}
-    )
 
-class Role(db.Model):
-    __tablename__ = 'roles'
+class Professor(db.Model):
+    __tablename__ = 'professores'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    users = db.relationship('User', backref='role', lazy='dynamic')
+    disciplina = db.Column(db.String(10))
 
     def __repr__(self):
-        return '<Role %r>' % self.name
+        return '<Professor %r>' % self.name
 
-class User(db.Model):
-    __tablename__ = 'users'
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, index=True)
-    role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
 
-    def __repr__(self):
-        return '<User %r>' % self.username
-
-class NameForm(FlaskForm):
-    name = StringField('What is your name?', validators=[DataRequired()])
-    role = SelectField('What is your role?', choices=[
-        ('user', 'User'),
-        ('admin', 'Administrator'),
-        ('moderator', 'Moderator')  # Adicionando a opção de Moderator
+class ProfessorForm(FlaskForm):
+    name = StringField('Cadastre o novo Professor:', validators=[DataRequired()])
+    disciplina = SelectField('Disciplina', choices=[
+        ('DSWA5', 'DSWA5'),
+        ('GPSA5', 'GPSA5'),
+        ('IHCA5', 'IHCA5'),
+        ('SODA5', 'SODA5'),
+        ('PJIA5', 'PJIA5'),
+        ('TCOA5', 'TCOA5')
     ])
-    submit = SubmitField('Submit')
+    submit = SubmitField('Cadastrar')
+
 
 @app.shell_context_processor
 def make_shell_context():
-    return dict(db=db, User=User, Role=Role)
+    return dict(db=db, Professor=Professor)
+
 
 @app.errorhandler(404)
 def page_not_found(e):
     return render_template('404.html'), 404
 
+
 @app.errorhandler(500)
 def internal_server_error(e):
     return render_template('500.html'), 500
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/')
 def index():
-    form = NameForm()
+    return render_template('index.html')
+
+
+@app.route('/cadastro-professores', methods=['GET', 'POST'])
+def cadastro_professores():
+    print("Entrou na rota /cadastro-professores")
+    form = ProfessorForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(username=form.name.data).first()
-        if user is None:
-            role = Role.query.filter_by(name=form.role.data).first()
-            if role is None:
-                role = Role(name=form.role.data)
-                db.session.add(role)
+        print("Formulário validado com sucesso.")
+        professor = Professor.query.filter_by(name=form.name.data).first()
+        if professor is None:
+            try:
+                professor = Professor(name=form.name.data, disciplina=form.disciplina.data)
+                db.session.add(professor)
                 db.session.commit()
-            user = User(username=form.name.data, role=role)
-            db.session.add(user)
-            db.session.commit()
-            session['known'] = False
-
-            # Enviar e-mail após o cadastro de um novo usuário
-            response = send_simple_message(
-                subject="Novo usuário cadastrado",
-                body=f"Usuário {user.username} foi cadastrado com sucesso com a função {role.name} na Aplicação do Felipe Lopes."
-            )
-
-            # Adicionar um feedback sobre o envio do e-mail
-            if response.status_code == 200:
-                print("E-mail enviado com sucesso.")
-            else:
-                print(f"Falha no envio do e-mail: {response.status_code} - {response.text}")
-
+                print(f"Professor '{professor.name}' cadastrado com sucesso.")
+                flash(f"Professor '{professor.name}' cadastrado com sucesso!", 'success')
+                return redirect(url_for('cadastro_professores'))
+            except Exception as e:
+                print(f"Erro ao cadastrar professor: {e}")
+                db.session.rollback()
+                flash("Ocorreu um erro ao cadastrar o professor. Por favor, tente novamente.", 'danger')
         else:
-            session['known'] = True
-        session['name'] = form.name.data
-        session['role'] = form.role.data
-        return redirect(url_for('index'))
+            print(f"Professor '{form.name.data}' já existe no banco de dados.")
+            flash(f"Professor '{form.name.data}' já está cadastrado.", 'warning')
 
-    # Consultar todos os usuários e funções
-    users = User.query.all()
-    roles = Role.query.all()
+    try:
+        professores = Professor.query.all()
+        print(f"Professores cadastrados: {professores}")
+    except Exception as e:
+        print(f"Erro ao consultar professores: {e}")
+        professores = []
 
-    # Contagem de usuários
-    total_users = len(users)
-
-    # Agrupamento de usuários por função
-    users_by_role = {}
-    for role in roles:
-        users_by_role[role.name] = User.query.filter_by(role=role).all()
-
-    return render_template('index.html', form=form, name=session.get('name'),
-                           known=session.get('known', False), users=users,
-                           total_users=total_users, users_by_role=users_by_role)
-
+    return render_template('cadastro_professores.html', form=form, professores=professores)
+   
+    
+    
 if __name__ == '__main__':
     app.run(debug=True, port=5002)

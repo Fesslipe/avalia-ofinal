@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block page_content %}
+<div class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+            <label for="name">Nome do Professor:</label>
+            {{ form.name(class="form-control") }}
+            {% if form.name.errors %}
+                <div class="text-danger">
+                    {% for error in form.name.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="disciplina">Disciplina associada:</label>
+            {{ form.disciplina(class="form-control") }}
+            {% if form.disciplina.errors %}
+                <div class="text-danger">
+                    {% for error in form.disciplina.errors %}
+                        <span>{{ error }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+        <button type="submit" class="btn btn-primary">Cadastrar</button>
+    </form>
+
+    <h3 class="mt-4">Relação de professores cadastrados</h3>
+    {% if professores %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Professor</th>
+                <th>Disciplina</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for professor in professores %}
+            <tr>
+                <td>{{ professor.name }}</td>
+                <td>{{ professor.disciplina }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>Nenhum professor cadastrado ainda.</p>
+    {% endif %}
+</div>
+{% endblock %}
